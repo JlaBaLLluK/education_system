@@ -9,5 +9,8 @@ class Student(AbstractUser):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True, default=None, null=True)
     available_product = models.ForeignKey(Product, on_delete=models.CASCADE, blank=True, default=None, null=True)
 
+    class Meta:
+        db_table = 'students'
+
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
