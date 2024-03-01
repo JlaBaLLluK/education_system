@@ -4,11 +4,11 @@ from django.utils import timezone
 from rest_framework.generics import get_object_or_404, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.status import HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 from rest_framework.views import APIView
 
 from product.models import Product, Group, Lesson
-from product.serializers import ProductSerializer
+from product.serializers import ProductSerializer, LessonSerializer
 
 
 class GrantAccessView(APIView):
@@ -18,7 +18,7 @@ class GrantAccessView(APIView):
         student = request.user
         product = get_object_or_404(Product, id=product_pk)
         if student.available_product == product:
-            return Response({'forbidden': "Already in this product group!"})
+            return Response({'forbidden': "Already in this product group!"}, status=HTTP_403_FORBIDDEN)
 
         student.available_product = product
         student.save()
@@ -48,7 +48,6 @@ class GrantAccessView(APIView):
 
 
 class AvailableProductView(ListAPIView):
-    serializer_class = ProductSerializer
     queryset = Product.objects.all()
 
     def get(self, request, *args, **kwargs):
@@ -57,3 +56,14 @@ class AvailableProductView(ListAPIView):
             author_name=Concat('author__first_name', Value(' '), 'author__last_name'))
         products_serializer = ProductSerializer(all_products, many=True)
         return Response(products_serializer.data, status=HTTP_200_OK)
+
+
+class ProductLessonsView(APIView):
+
+    @staticmethod
+    def get(request, product_pk):
+        if request.user.available_product.id != product_pk:
+            return Response({'forbidden': "You don't have access to this product!"}, status=HTTP_403_FORBIDDEN)
+
+        lessons = Lesson.objects.filter(product=product_pk)
+        return Response(LessonSerializer(lessons, many=True).data, status=HTTP_200_OK)
