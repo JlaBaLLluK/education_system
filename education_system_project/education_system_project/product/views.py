@@ -1,4 +1,4 @@
-from django.db.models import Count, Value
+from django.db.models import Count, Value, ExpressionWrapper, FloatField
 from django.db.models.functions import Concat
 from django.utils import timezone
 from rest_framework.generics import get_object_or_404, ListAPIView
@@ -8,7 +8,8 @@ from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 from rest_framework.views import APIView
 
 from product.models import Product, Group, Lesson
-from product.serializers import ProductSerializer, LessonSerializer
+from product.serializers import ProductSerializer, LessonSerializer, ProductStatsSerializer
+from student.models import Student
 
 
 class GrantAccessView(APIView):
@@ -52,7 +53,7 @@ class AvailableProductView(ListAPIView):
 
     def get(self, request, *args, **kwargs):
         all_products = Product.objects.filter(start_time__gt=timezone.now()).annotate(
-            lessons_amount=Count('product_lessons'),
+            lessons_amount=Count('lessons_on_product'),
             author_name=Concat('author__first_name', Value(' '), 'author__last_name'))
         products_serializer = ProductSerializer(all_products, many=True)
         return Response(products_serializer.data, status=HTTP_200_OK)
@@ -62,8 +63,33 @@ class ProductLessonsView(APIView):
 
     @staticmethod
     def get(request, product_pk):
-        if request.user.available_product.id != product_pk:
+        if request.user.available_product is None or request.user.available_product.id != product_pk:
             return Response({'forbidden': "You don't have access to this product!"}, status=HTTP_403_FORBIDDEN)
 
         lessons = Lesson.objects.filter(product=product_pk)
+        if len(lessons) == 0:
+            return Response({'No lessons'})
+
         return Response(LessonSerializer(lessons, many=True).data, status=HTTP_200_OK)
+
+
+class ProductsStatistics(APIView):
+
+    def get(self, request):
+        total_students_amount = Student.objects.count()
+        all_products = Product.objects.annotate(students_amount=Count('students_on_product', distinct=True),
+                                                groups_amount=Count('groups_on_product', distinct=True))
+        stats = []
+        for product in all_products:
+            stats.append(
+                {
+                    'product': product.product_name,
+                    'students_on_product': product.students_amount,
+                    'student_in_group_percentage': product.students_amount / (
+                            product.groups_amount * product.max_students_amount) * 100
+                    if product.groups_amount != 0 else 0,
+                    'student_in_product_percentage': product.students_amount / total_students_amount * 100
+                }
+            )
+
+        return Response(stats, status=HTTP_200_OK)

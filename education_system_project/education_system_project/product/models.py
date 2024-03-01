@@ -31,7 +31,7 @@ class Product(models.Model):
 
 class Group(models.Model):
     group_name = models.CharField(blank=False, max_length=128)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='groups_on_product')
     current_students_amount = models.IntegerField(blank=False, default=0)
 
     class Meta:
@@ -44,7 +44,7 @@ class Group(models.Model):
 class Lesson(models.Model):
     lesson_name = models.CharField(blank=False, max_length=128)
     url = models.URLField()
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_lessons')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='lessons_on_product')
 
     class Meta:
         db_table = 'lessons'
