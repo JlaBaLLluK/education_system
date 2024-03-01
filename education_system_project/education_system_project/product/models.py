@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class ProductAuthor(models.Model):
@@ -15,7 +16,7 @@ class ProductAuthor(models.Model):
 
 class Product(models.Model):
     product_name = models.CharField(max_length=128)
-    start_time = models.DateTimeField(auto_now=True)
+    start_time = models.DateTimeField(default=timezone.now)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     min_students_amount = models.IntegerField(blank=False)
     max_students_amount = models.IntegerField(blank=False)
@@ -43,7 +44,7 @@ class Group(models.Model):
 class Lesson(models.Model):
     lesson_name = models.CharField(blank=False, max_length=128)
     url = models.URLField()
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_lessons')
 
     class Meta:
         db_table = 'lessons'

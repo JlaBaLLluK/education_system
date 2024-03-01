@@ -1,10 +1,14 @@
-from rest_framework.generics import get_object_or_404
+from django.db.models import Count, Value
+from django.db.models.functions import Concat
+from django.utils import timezone
+from rest_framework.generics import get_object_or_404, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK
 from rest_framework.views import APIView
 
-from product.models import Product, Group
+from product.models import Product, Group, Lesson
+from product.serializers import ProductSerializer
 
 
 class GrantAccessView(APIView):
@@ -41,3 +45,15 @@ class GrantAccessView(APIView):
         group.current_students_amount += 1
         group.save()
         return Response({'success': 'New group created, access granted!'}, status=HTTP_200_OK)
+
+
+class AvailableProductView(ListAPIView):
+    serializer_class = ProductSerializer
+    queryset = Product.objects.all()
+
+    def get(self, request, *args, **kwargs):
+        all_products = Product.objects.filter(start_time__gt=timezone.now()).annotate(
+            lessons_amount=Count('product_lessons'),
+            author_name=Concat('author__first_name', Value(' '), 'author__last_name'))
+        products_serializer = ProductSerializer(all_products, many=True)
+        return Response(products_serializer.data, status=HTTP_200_OK)
