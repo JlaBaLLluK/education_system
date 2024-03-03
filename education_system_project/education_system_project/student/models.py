@@ -8,7 +8,7 @@ class Student(AbstractUser):
     last_name = models.CharField(max_length=128, blank=False)
     group = models.ForeignKey(Group, on_delete=models.CASCADE, blank=True, default=None, null=True,
                               related_name='students_in_group')
-    available_product = models.ForeignKey(Product, on_delete=models.CASCADE, blank=True, default=0, null=True,
+    available_product = models.ForeignKey(Product, on_delete=models.CASCADE, blank=True, default=None, null=True,
                                           related_name='students_on_product')
 
     class Meta:

@@ -24,9 +24,6 @@ class GrantAccessView(APIView):
         student.available_product = product
         student.save()
         groups = Group.objects.filter(product=product).select_related('product')
-        if len(groups) == 0:
-            return self.make_new_group(student, product, len(groups) + 1)
-
         for i, group in enumerate(groups):
             if group.current_students_amount < group.product.max_students_amount:
                 student.group = group
